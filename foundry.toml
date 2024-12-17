@@ -1,0 +1,19 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["lib"]
+evm_version = "paris"  # or another supported version
+optimizer = true
+optimizer_runs = 200
+
+# Additional common settings you might want to include
+solc_version = "0.8.17"
+# gas_reports = ["*"]
+# auto_detect_solc = true
+# block_timestamp = 1622400000
+# block_number = 12345000
+
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+
+
