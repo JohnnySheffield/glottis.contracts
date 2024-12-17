@@ -11,6 +11,8 @@ A fair and transparent protocol for creating tokens with customizable price curv
 
 Glottis Protocol combines the best of bonding curves with automated market making to create a fair token launch experience. It uses beautiful Bézier curves to control token pricing and ensures everyone gets an equal chance to participate.
 
+![glottis.fun](./img/glottis.fun.png)
+
 ## Key Features
 
 ### 🎨 Design Your Token Launch
