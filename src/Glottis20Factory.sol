@@ -49,6 +49,7 @@ contract Glottis20Factory is ReentrancyGuard {
 
     event TokensPurchased(address indexed token, address indexed buyer, uint256 amount, uint256 ethSpent);
     event TokensSold(address indexed token, address indexed buyer, uint256 amount, uint256 ethSpent);
+    event UniswapMarketCreated(address indexed token);
 
     error MaxSupplyReached();
     error InvalidAmount();
@@ -82,6 +83,8 @@ contract Glottis20Factory is ReentrancyGuard {
 
         uint256 ethLiquidity = collectedETH[token];
 
+        delete collectedETH[token];
+
         if (ethLiquidity == 0) revert InsufficientLiquidity();
 
         uint256 protocolEthFee = ethLiquidity.mulWad(PROTOCOL_FEE);
@@ -97,9 +100,11 @@ contract Glottis20Factory is ReentrancyGuard {
 
         glottis20.mint(address(this), currentSupply);
 
-        glottis20.approve(address(uniswapRouter), 0);
+        bool resApproveZero = glottis20.approve(address(uniswapRouter), 0);
 
-        glottis20.approve(address(uniswapRouter), type(uint256).max);
+        bool resApproveAmnt = glottis20.approve(address(uniswapRouter), type(uint256).max);
+
+        require(resApproveZero && resApproveAmnt, "external call(s) failed");
 
         uint256 factoryBalance = glottis20.balanceOf(address(this));
 
@@ -111,7 +116,7 @@ contract Glottis20Factory is ReentrancyGuard {
             token, currentSupply, currentSupply, liquidityEth, address(this), block.timestamp + 15000
         );
 
-        delete collectedETH[token];
+        emit UniswapMarketCreated(token);
     }
 
     function createToken(
@@ -193,7 +198,7 @@ contract Glottis20Factory is ReentrancyGuard {
 
         uint256 ONEMinusT = ONE_FULL.rawSub(t);
 
-        uint256[4] memory pricesWei;
+        uint256[4] memory pricesWei = [uint256(0), uint256(0), uint256(0), uint256(0)];
 
         for (uint256 i = 0; i < 4; i++) {
             pricesWei[i] = uint256(prices[i]).rawMul(GWEI_TO_WEI);
@@ -256,10 +261,8 @@ contract Glottis20Factory is ReentrancyGuard {
         if (msg.value > ethToUse) {
             msg.sender.forceSafeTransferETH(msg.value.rawSub(ethToUse));
         }
-
-        Glottis20(token).mint(msg.sender, tokensToMint);
         collectedETH[token] = collectedETH[token].rawAdd(ethToUse);
-
+        Glottis20(token).mint(msg.sender, tokensToMint);
         emit TokensPurchased(token, msg.sender, tokensToMint, ethToUse);
     }
 
@@ -298,14 +301,14 @@ contract Glottis20Factory is ReentrancyGuard {
     }
 
     function _processSell(address token, uint256 tokensToSell, uint256 ethToReturn, uint256 finalEthAmount) internal {
-        Glottis20(token).burn(msg.sender, tokensToSell);
-
         uint256 feeAmount = ethToReturn.mulWad(SELL_FEE);
+
+        collectedETH[token] = collectedETH[token].rawSub(ethToReturn);
 
         protocolWallet.forceSafeTransferETH(feeAmount);
         msg.sender.forceSafeTransferETH(finalEthAmount);
 
-        collectedETH[token] = collectedETH[token].rawSub(ethToReturn);
+        Glottis20(token).burn(msg.sender, tokensToSell);
 
         emit TokensSold(token, msg.sender, tokensToSell, finalEthAmount);
     }

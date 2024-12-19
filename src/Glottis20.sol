@@ -20,13 +20,14 @@ contract Glottis20 is ERC20 {
         string memory tokenSymbol,
         uint8 tokenDecimals,
         uint256 _maxSupply,
-        address _factory // Add factory parameter
+        address _factory
     ) {
+        require(_factory != address(0), "no zero address");
         _name = tokenName;
         _symbol = tokenSymbol;
         _decimals = tokenDecimals;
         maxSupply = _maxSupply;
-        factory = _factory; // Set the actual factory address
+        factory = _factory;
     }
 
     function name() public view override returns (string memory) {
