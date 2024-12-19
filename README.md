@@ -111,11 +111,11 @@ For more information on our tests and code scanning, please refer to the followi
 ## Additional Info
 
 ### Trading Lifecycle
-1. Initial Sale Phase
+1. Initial Mint/Burn Phase
    - Price follows the defined Bézier curve
    - Tokens are minted progressively through 100 steps
    - Each step has a fixed amount of tokens at a fixed price
-   - Small sell fee (0.5%) to discourage immediate dumping
+   - Small burn fee (0.35%) to discourage immediate dumping
    
 2. Liquidity Creation
    - After initial sale completes, equal amount of tokens are minted for liquidity
@@ -133,20 +133,20 @@ For more information on our tests and code scanning, please refer to the followi
   - Creator Fee: 0.10%
   - Caller Fee: 0.05%
 - Trading:
-  - Sell Fee: 0.35%
-  - Buy fee: 0.00%
+  - Burn Fee: 0.35%
+  - Mint fee: 0.00%
 
 ## Technical Implementation
 
 ### Smart Contracts
-- **Glottis20Factory**: Main factory contract handling token creation and sales
+- **Glottis20Mint**: the Mint contract handling token creation and sales
   - Manages token deployment
   - Handles bonding curve calculations
   - Controls minting and burning
   - Manages liquidity pool creation
 
 - **Glottis20**: ERC20 implementation with additional features
-  - Controlled minting through factory
+  - Controlled minting through the Mint
   - Trading lock mechanism
   - Immutable supply and decimals
 

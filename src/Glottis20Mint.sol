@@ -12,7 +12,7 @@ import "lib/solady/src/utils/SafeTransferLib.sol";
 
 import "./interfaces/IUniswapV2Router02.sol";
 
-contract Glottis20Factory is ReentrancyGuard {
+contract Glottis20Mint is ReentrancyGuard {
     using FixedPointMathLib for uint256;
     using SafeTransferLib for address;
 
@@ -36,8 +36,8 @@ contract Glottis20Factory is ReentrancyGuard {
     uint256 public constant CREATOR_FEE = 10e14;
     uint256 public constant CALLER_FEE = 5e14;
 
-    //fee on each sell, in eth.
-    uint256 public constant SELL_FEE = 35e14;
+    //fee on each burn, in eth.
+    uint256 public constant BURN_FEE = 35e14;
 
     uint256 public constant BASIS_POINTS = 10000;
 
@@ -47,8 +47,8 @@ contract Glottis20Factory is ReentrancyGuard {
         address indexed tokenAddress, string name, string symbol, uint256 maxSupply, uint64[4] pricePoints
     );
 
-    event TokensPurchased(address indexed token, address indexed buyer, uint256 amount, uint256 ethSpent);
-    event TokensSold(address indexed token, address indexed buyer, uint256 amount, uint256 ethSpent);
+    event TokensPurchased(address indexed token, address indexed Minter, uint256 amount, uint256 ethSpent);
+    event TokensSold(address indexed token, address indexed Minter, uint256 amount, uint256 ethSpent);
     event UniswapMarketCreated(address indexed token);
 
     error MaxSupplyReached();
@@ -221,19 +221,19 @@ contract Glottis20Factory is ReentrancyGuard {
         return result;
     }
 
-    function buy(address token, uint256 minTokensOut) external payable nonReentrant {
+    function Mint(address token, uint256 minTokensOut) external payable nonReentrant {
         if (pointsMap[token] == 0) revert TokenNotFound();
         if (msg.value == 0) revert InvalidAmount();
 
-        (uint256 tokensToMint, uint256 ethToUse) = _calculateBuyAmount(token, msg.value);
+        (uint256 tokensToMint, uint256 ethToUse) = _calculateMintAmount(token, msg.value);
 
         if (tokensToMint == 0) revert InsufficientPayment();
         if (tokensToMint < minTokensOut) revert SlippageExceeded();
 
-        _processBuy(token, tokensToMint, ethToUse);
+        _processMint(token, tokensToMint, ethToUse);
     }
 
-    function _calculateBuyAmount(address token, uint256 ethIn)
+    function _calculateMintAmount(address token, uint256 ethIn)
         internal
         view
         returns (uint256 tokensToMint, uint256 ethToUse)
@@ -257,7 +257,7 @@ contract Glottis20Factory is ReentrancyGuard {
         ethToUse = pricePerFullToken.mulWad(tokensToMint);
     }
 
-    function _processBuy(address token, uint256 tokensToMint, uint256 ethToUse) internal {
+    function _processMint(address token, uint256 tokensToMint, uint256 ethToUse) internal {
         if (msg.value > ethToUse) {
             msg.sender.forceSafeTransferETH(msg.value.rawSub(ethToUse));
         }
@@ -266,19 +266,19 @@ contract Glottis20Factory is ReentrancyGuard {
         emit TokensPurchased(token, msg.sender, tokensToMint, ethToUse);
     }
 
-    function sell(address token, uint256 tokenAmount, uint256 minEthOut) external nonReentrant {
+    function Burn(address token, uint256 tokenAmount, uint256 minEthOut) external nonReentrant {
         if (pointsMap[token] == 0) revert TokenNotFound();
         if (tokenAmount == 0) revert InvalidAmount();
 
-        (uint256 tokensToSell, uint256 ethToReturn, uint256 finalEthAmount) =
-            _calculateSellAmount(token, tokenAmount, minEthOut);
-        _processSell(token, tokensToSell, ethToReturn, finalEthAmount);
+        (uint256 tokensToBurn, uint256 ethToReturn, uint256 finalEthAmount) =
+            _calculateBurnAmount(token, tokenAmount, minEthOut);
+        _processBurn(token, tokensToBurn, ethToReturn, finalEthAmount);
     }
 
-    function _calculateSellAmount(address token, uint256 tokenAmount, uint256 minEthOut)
+    function _calculateBurnAmount(address token, uint256 tokenAmount, uint256 minEthOut)
         internal
         view
-        returns (uint256 tokensToSell, uint256 ethToReturn, uint256 finalEthAmount)
+        returns (uint256 tokensToBurn, uint256 ethToReturn, uint256 finalEthAmount)
     {
         Glottis20 glottis20 = Glottis20(token);
         uint256 STEP_SIZE = glottis20.maxSupply().rawDiv(2).rawDiv(HUNDRED);
@@ -291,26 +291,26 @@ contract Glottis20Factory is ReentrancyGuard {
             calculatePrice(token, (stepStartSupply.rawMul(ONE_FULL)).rawDiv(glottis20.maxSupply().rawDiv(2)));
 
         uint256 availableInStep = currentSupply.rawSub(stepStartSupply);
-        tokensToSell = tokenAmount > availableInStep ? availableInStep : tokenAmount;
-        ethToReturn = pricePerFullToken.mulWad(tokensToSell);
+        tokensToBurn = tokenAmount > availableInStep ? availableInStep : tokenAmount;
+        ethToReturn = pricePerFullToken.mulWad(tokensToBurn);
 
         if (ethToReturn > collectedETH[token]) revert InsufficientBalance();
 
-        finalEthAmount = ethToReturn.rawSub(ethToReturn.mulWad(SELL_FEE));
+        finalEthAmount = ethToReturn.rawSub(ethToReturn.mulWad(BURN_FEE));
         if (finalEthAmount < minEthOut) revert SlippageExceeded();
     }
 
-    function _processSell(address token, uint256 tokensToSell, uint256 ethToReturn, uint256 finalEthAmount) internal {
-        uint256 feeAmount = ethToReturn.mulWad(SELL_FEE);
+    function _processBurn(address token, uint256 tokensToBurn, uint256 ethToReturn, uint256 finalEthAmount) internal {
+        uint256 feeAmount = ethToReturn.mulWad(BURN_FEE);
 
         collectedETH[token] = collectedETH[token].rawSub(ethToReturn);
 
         protocolWallet.forceSafeTransferETH(feeAmount);
         msg.sender.forceSafeTransferETH(finalEthAmount);
 
-        Glottis20(token).burn(msg.sender, tokensToSell);
+        Glottis20(token).burn(msg.sender, tokensToBurn);
 
-        emit TokensSold(token, msg.sender, tokensToSell, finalEthAmount);
+        emit TokensSold(token, msg.sender, tokensToBurn, finalEthAmount);
     }
 
     function predictTokenAddress(bytes32 salt) external view returns (address predictedAddress, bool isDeployed) {

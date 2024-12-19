@@ -60,7 +60,7 @@ jobs:
           done
 
            forge script script/DeployAndTest.s.sol --fork-url http://localhost:8545 --broadcast &
-           forge test --match-path test/Glottis20FactoryTest.t.sol -vvvv --fork-url http://localhost:8545
+           forge test --match-path test/Glottis20MintTest.t.sol -vvvv --fork-url http://localhost:8545
         id: test
       - name: Run Slither
         uses: crytic/slither-action@v0.4.0
