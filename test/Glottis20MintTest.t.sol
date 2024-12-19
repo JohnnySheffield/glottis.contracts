@@ -38,14 +38,14 @@ contract Glottis20MintTest is Test {
         uint256 price2 = glottisMint.calculatePrice(token, t);
         uint256 ethRequired2 = (price2 * stepSize) / 1e18;
 
-        glottisMint.Mint{value: ethRequired2 * 2}(token, 0); // Extra ETH should be refunded
+        glottisMint.mint{value: ethRequired2 * 2}(token, 0); // Extra ETH should be refunded
 
         // Burn a period
         uint256 currentSupply2 = Glottis20(token).totalSupply();
         uint256 BurnAmount = currentSupply2 - ((currentSupply2 - 1) / stepSize) * stepSize;
 
         uint256 balanceBefore = user.balance;
-        glottisMint.Burn(token, BurnAmount, 0);
+        glottisMint.burn(token, BurnAmount, 0);
         uint256 balanceAfter = user.balance;
 
         // Verify received ETH
@@ -58,7 +58,7 @@ contract Glottis20MintTest is Test {
             uint256 price = glottisMint.calculatePrice(token, t3);
             uint256 ethRequired = (price * stepSize) / 1e18;
 
-            glottisMint.Mint{value: ethRequired * 2}(token, 0); // Extra ETH should be refunded
+            glottisMint.mint{value: ethRequired * 2}(token, 0); // Extra ETH should be refunded
         }
 
         // Verify total supply after Minting
@@ -136,7 +136,7 @@ contract Glottis20MintTest is Test {
         uint256 price3 = glottisMint.calculatePrice(smol, t);
         uint256 ethRequired3 = (price3 * stepSize) / 1e18;
 
-        glottisMint.Mint{value: ethRequired3 * 2}(smol, 0); // Extra ETH should be refunded
+        glottisMint.mint{value: ethRequired3 * 2}(smol, 0); // Extra ETH should be refunded
 
         // Mint a period
         uint256 currentSupply2 = Glottis20(maxxy).totalSupply();
@@ -144,7 +144,7 @@ contract Glottis20MintTest is Test {
         uint256 price4 = glottisMint.calculatePrice(maxxy, t2);
         uint256 ethRequired4 = (price4 * stepSize2) / 1e18;
 
-        glottisMint.Mint{value: ethRequired4}(maxxy, 0); // Extra ETH should be refunded
+        glottisMint.mint{value: ethRequired4}(maxxy, 0); // Extra ETH should be refunded
     }
 
     function testFuzz_FindMaxSafeValue(uint256 maxSupply, uint64 pricePoint) public {
@@ -171,7 +171,7 @@ contract Glottis20MintTest is Test {
                 uint256 ethRequired = (price * stepSize) / 1e18;
 
                 // Try to perform the Mint
-                try glottisMint.Mint{value: ethRequired}(tokenAddress, 0) {
+                try glottisMint.mint{value: ethRequired}(tokenAddress, 0) {
                     // Log successful values
                     emit log_named_uint("Successful maxSupply", maxSupply);
                     emit log_named_uint("Successful pricePoint", pricePoint);
@@ -217,7 +217,7 @@ contract Glottis20MintTest is Test {
         emit log_named_uint("Price", price);
         emit log_named_uint("Required ETH", ethRequired);
 
-        glottisMint.Mint{value: ethRequired}(token, 0);
+        glottisMint.mint{value: ethRequired}(token, 0);
 
         vm.stopPrank();
     }
@@ -233,7 +233,7 @@ contract Glottis20MintTest is Test {
         uint256 price = glottisMint.calculatePrice(token, t);
         uint256 ethRequired = (price * stepSize) / 1e18;
 
-        glottisMint.Mint{value: ethRequired}(token, 0);
+        glottisMint.mint{value: ethRequired}(token, 0);
 
         // Verify user received tokens
         uint256 userBalance = Glottis20(token).balanceOf(user);
@@ -268,7 +268,7 @@ contract Glottis20MintTest is Test {
         uint256 price = glottisMint.calculatePrice(token, t);
         uint256 ethRequired = (price * stepSize) / 1e18;
 
-        glottisMint.Mint{value: ethRequired}(token, 0);
+        glottisMint.mint{value: ethRequired}(token, 0);
 
         address recipient = address(0x3);
 
@@ -288,7 +288,7 @@ contract Glottis20MintTest is Test {
         uint256 price = glottisMint.calculatePrice(token, t);
         uint256 ethRequired = (price * stepSize) / 1e18;
 
-        glottisMint.Mint{value: ethRequired}(token, 0);
+        glottisMint.mint{value: ethRequired}(token, 0);
 
         address recipient = address(0x3);
 

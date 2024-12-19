@@ -221,7 +221,7 @@ contract Glottis20Mint is ReentrancyGuard {
         return result;
     }
 
-    function Mint(address token, uint256 minTokensOut) external payable nonReentrant {
+    function mint(address token, uint256 minTokensOut) external payable nonReentrant {
         if (pointsMap[token] == 0) revert TokenNotFound();
         if (msg.value == 0) revert InvalidAmount();
 
@@ -266,7 +266,7 @@ contract Glottis20Mint is ReentrancyGuard {
         emit TokensPurchased(token, msg.sender, tokensToMint, ethToUse);
     }
 
-    function Burn(address token, uint256 tokenAmount, uint256 minEthOut) external nonReentrant {
+    function burn(address token, uint256 tokenAmount, uint256 minEthOut) external nonReentrant {
         if (pointsMap[token] == 0) revert TokenNotFound();
         if (tokenAmount == 0) revert InvalidAmount();
 
