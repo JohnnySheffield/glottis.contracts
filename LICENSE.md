@@ -6,7 +6,9 @@ Business Source License 1.1
 Parameters
 
 Licensor:             Nikola Jokić
+
 Licensed Work:        Glottis Protocol
+                      The Licensed Work is (c) 2025 Nikola Jokić
 
 Additional Use Grant: Any uses listed and defined at
                       https://glottis.fun/license-grants
