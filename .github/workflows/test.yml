@@ -60,3 +60,13 @@ jobs:
            forge script script/DeployAndTest.s.sol --fork-url http://localhost:8545 --broadcast &
            forge test --match-path test/Glottis20FactoryTest.t.sol -vvvv --fork-url http://localhost:8545
         id: test
+      - name: Run Slither
+        uses: crytic/slither-action@v0.4.0
+        id: slither
+        with:
+          sarif: results.sarif
+          fail-on: none
+      - name: Upload SARIF file
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.slither.outputs.sarif }}
