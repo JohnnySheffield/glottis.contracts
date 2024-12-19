@@ -32,9 +32,9 @@ contract Glottis20Factory is ReentrancyGuard {
     uint256 private constant HUNDRED = 100;
 
     //fees when creating a new uniswap pool, in eth.
-    uint256 public constant PROTOCOL_FEE = 20e14; 
+    uint256 public constant PROTOCOL_FEE = 20e14;
     uint256 public constant CREATOR_FEE = 10e14;
-    uint256 public constant CALLER_FEE = 5e14; 
+    uint256 public constant CALLER_FEE = 5e14;
 
     //fee on each sell, in eth.
     uint256 public constant SELL_FEE = 35e14;
@@ -103,7 +103,6 @@ contract Glottis20Factory is ReentrancyGuard {
 
         uint256 factoryBalance = glottis20.balanceOf(address(this));
 
-
         if (factoryBalance < currentSupply) revert InsufficientBalance();
 
         glottis20.setTradingUnlocked();
@@ -127,7 +126,12 @@ contract Glottis20Factory is ReentrancyGuard {
 
         if (maxSupply < ONE_FULL || maxSupply > type(uint128).max || maxSupply % 2 != 0) revert InvalidInput();
 
-        if ((pricePoints[0] < 1 && pricePoints[0] == type(uint128).max)   || (pricePoints[1] < 1 && pricePoints[1] == type(uint128).max) || (pricePoints[2] < 1 && pricePoints[2] == type(uint128).max) || (pricePoints[3] < 1 && pricePoints[0] == type(uint128).max)) {
+        if (
+            (pricePoints[0] < 1 && pricePoints[0] == type(uint128).max)
+                || (pricePoints[1] < 1 && pricePoints[1] == type(uint128).max)
+                || (pricePoints[2] < 1 && pricePoints[2] == type(uint128).max)
+                || (pricePoints[3] < 1 && pricePoints[0] == type(uint128).max)
+        ) {
             revert InvalidPricePoints();
         }
         if (pricePoints[0] < 1 || pricePoints[1] < 1 || pricePoints[2] < 1 || pricePoints[3] < 1) {
@@ -138,8 +142,7 @@ contract Glottis20Factory is ReentrancyGuard {
         if (predictedAddress.code.length > 0) revert TokenExists();
 
         address tokenAddress = CREATE3.deployDeterministic(
-            abi.encodePacked(type(Glottis20).creationCode, abi.encode(name, symbol, 18, maxSupply, address(this))),
-            salt
+            abi.encodePacked(type(Glottis20).creationCode, abi.encode(name, symbol, 18, maxSupply, address(this))), salt
         );
 
         if (tokenAddress.code.length == 0) revert DeploymentFailed();
@@ -236,7 +239,8 @@ contract Glottis20Factory is ReentrancyGuard {
         if (glottis20.maxSupply().rawDiv(2) == glottis20.totalSupply()) revert MaxSupplyReached();
 
         uint256 stepStartSupply = (currentSupply.rawDiv(STEP_SIZE)).rawMul(STEP_SIZE);
-        uint256 pricePerFullToken = calculatePrice(token, (stepStartSupply.rawMul(ONE_FULL)).rawDiv(glottis20.maxSupply().rawDiv(2)));
+        uint256 pricePerFullToken =
+            calculatePrice(token, (stepStartSupply.rawMul(ONE_FULL)).rawDiv(glottis20.maxSupply().rawDiv(2)));
 
         tokensToMint = ethIn.rawMul(ONE_FULL).rawDiv(pricePerFullToken);
         uint256 maxInStep = (stepStartSupply.rawDiv(STEP_SIZE).rawAdd(1).rawMul(STEP_SIZE)).rawSub(currentSupply);
@@ -280,7 +284,8 @@ contract Glottis20Factory is ReentrancyGuard {
         if (glottis20.maxSupply().rawDiv(2) == glottis20.totalSupply()) revert MaxSupplyReached();
 
         uint256 stepStartSupply = ((currentSupply - 1).rawDiv(STEP_SIZE)).rawMul(STEP_SIZE);
-        uint256 pricePerFullToken = calculatePrice(token, (stepStartSupply.rawMul(ONE_FULL)).rawDiv(glottis20.maxSupply().rawDiv(2)));
+        uint256 pricePerFullToken =
+            calculatePrice(token, (stepStartSupply.rawMul(ONE_FULL)).rawDiv(glottis20.maxSupply().rawDiv(2)));
 
         uint256 availableInStep = currentSupply.rawSub(stepStartSupply);
         tokensToSell = tokenAmount > availableInStep ? availableInStep : tokenAmount;

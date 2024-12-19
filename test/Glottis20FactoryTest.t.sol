@@ -21,7 +21,6 @@ contract Glottis20FactoryTest is Test {
     function setUp() public {
         factory = new Glottis20Factory(UNISWAP_ROUTER, PROTOCOL_WALLET);
 
-
         // Create token
         bytes32 salt = bytes32(uint256(1));
         token = factory.createToken("Test Token", "TEST", SALE_SUPPLY * 2, PRICE_POINTS, salt, "");
@@ -77,7 +76,9 @@ contract Glottis20FactoryTest is Test {
         assertTrue(Glottis20(token).tradingUnlocked());
 
         // Get Uniswap pair
-        address pair = IUniswapV2Factory(IUniswapV2Router02(UNISWAP_ROUTER).factory()).getPair(token, IUniswapV2Router02(UNISWAP_ROUTER).WETH());
+        address pair = IUniswapV2Factory(IUniswapV2Router02(UNISWAP_ROUTER).factory()).getPair(
+            token, IUniswapV2Router02(UNISWAP_ROUTER).WETH()
+        );
         assertTrue(pair != address(0));
 
         // Verify liquidity exists
@@ -98,7 +99,7 @@ contract Glottis20FactoryTest is Test {
         path[0] = token;
         path[1] = IUniswapV2Router02(UNISWAP_ROUTER).WETH();
         uint256 deadline = block.timestamp + 15 minutes;
-        
+
         balanceAfter = user.balance;
 
         IUniswapV2Router02(UNISWAP_ROUTER).swapExactTokensForETH(amountIn, amountOutMin, path, user, deadline);
@@ -109,11 +110,19 @@ contract Glottis20FactoryTest is Test {
         assertGt(user.balance, balanceAfter);
     }
 
-    function testSmolAndMaxy () public {
+    function testSmolAndMaxy() public {
         bytes32 salt1 = bytes32(uint256(2));
         bytes32 salt2 = bytes32(uint256(3));
-        address maxxy = factory.createToken("Maxxy Token", "MAXX", type(uint128).max - 1, [type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max], salt1, "");
-        address smol = factory.createToken("Smol Token", "SMOL", 1e18, [uint64(1),uint64(1),uint64(1),uint64(1)], salt2, "");
+        address maxxy = factory.createToken(
+            "Maxxy Token",
+            "MAXX",
+            type(uint128).max - 1,
+            [type(uint64).max, type(uint64).max, type(uint64).max, type(uint64).max],
+            salt1,
+            ""
+        );
+        address smol =
+            factory.createToken("Smol Token", "SMOL", 1e18, [uint64(1), uint64(1), uint64(1), uint64(1)], salt2, "");
 
         vm.startPrank(user);
         vm.deal(user, type(uint256).max);
@@ -129,7 +138,6 @@ contract Glottis20FactoryTest is Test {
 
         factory.buy{value: ethRequired3 * 2}(smol, 0); // Extra ETH should be refunded
 
-
         // Buy a period
         uint256 currentSupply2 = Glottis20(maxxy).totalSupply();
         uint256 t2 = (currentSupply2 * 1e18) / (Glottis20(maxxy).maxSupply() / 2);
@@ -140,185 +148,184 @@ contract Glottis20FactoryTest is Test {
     }
 
     function testFuzz_FindMaxSafeValue(uint256 maxSupply, uint64 pricePoint) public {
-    vm.assume(maxSupply > 1e18); // Ensure minimum reasonable supply
-    vm.assume(pricePoint > 0); // Ensure non-zero price
+        vm.assume(maxSupply > 1e18); // Ensure minimum reasonable supply
+        vm.assume(pricePoint > 0); // Ensure non-zero price
 
-    vm.assume(maxSupply <= type(uint128).max); // Ensure minimum reasonable supply
-    
-    try factory.createToken(
-        "Fuzz Token", 
-        "FUZZ", 
-        maxSupply, 
-        [pricePoint, pricePoint, pricePoint, pricePoint], 
-        bytes32(uint256(block.timestamp)), 
-        ""
-    ) returns (address tokenAddress) {
-        // If token creation succeeds, try to buy tokens
-        vm.deal(user, type(uint256).max); // Give user maximum ETH
-        vm.startPrank(user);
-        
-        uint256 stepSize = (maxSupply / 2) / 100; // 1% steps
-        
-        try factory.calculatePrice(tokenAddress, 1e18) returns (uint256 price) {
-            uint256 ethRequired = (price * stepSize) / 1e18;
-            
-            // Try to perform the buy
-            try factory.buy{value: ethRequired}(tokenAddress, 0) {
-                // Log successful values
-                emit log_named_uint("Successful maxSupply", maxSupply);
-                emit log_named_uint("Successful pricePoint", pricePoint);
-                emit log_named_uint("Required ETH", ethRequired);
+        vm.assume(maxSupply <= type(uint128).max); // Ensure minimum reasonable supply
+
+        try factory.createToken(
+            "Fuzz Token",
+            "FUZZ",
+            maxSupply,
+            [pricePoint, pricePoint, pricePoint, pricePoint],
+            bytes32(uint256(block.timestamp)),
+            ""
+        ) returns (address tokenAddress) {
+            // If token creation succeeds, try to buy tokens
+            vm.deal(user, type(uint256).max); // Give user maximum ETH
+            vm.startPrank(user);
+
+            uint256 stepSize = (maxSupply / 2) / 100; // 1% steps
+
+            try factory.calculatePrice(tokenAddress, 1e18) returns (uint256 price) {
+                uint256 ethRequired = (price * stepSize) / 1e18;
+
+                // Try to perform the buy
+                try factory.buy{value: ethRequired}(tokenAddress, 0) {
+                    // Log successful values
+                    emit log_named_uint("Successful maxSupply", maxSupply);
+                    emit log_named_uint("Successful pricePoint", pricePoint);
+                    emit log_named_uint("Required ETH", ethRequired);
+                } catch {
+                    emit log_string("Buy failed");
+                }
             } catch {
-                emit log_string("Buy failed");
+                emit log_string("Price calculation failed");
             }
+
+            vm.stopPrank();
         } catch {
-            emit log_string("Price calculation failed");
+            emit log_string("Token creation failed");
         }
-        
-        vm.stopPrank();
-    } catch {
-        emit log_string("Token creation failed");
     }
-}
 
-// Additional helper test to try specific boundary values
-function testSpecificBoundary() public {
-    uint256 maxSupply = type(uint128).max - 1; // Try half of uint256 max
-    uint64 pricePoint = type(uint64).max ;
-    
-    address token2 = factory.createToken(
-        "Boundary Token", 
-        "BOUND", 
-        maxSupply, 
-        [pricePoint, pricePoint, pricePoint, pricePoint], 
-        bytes32(uint256(block.timestamp)), 
-        ""
-    );
-    
-    vm.deal(user, type(uint256).max);
-    vm.startPrank(user);
-    
-    uint256 stepSize = (maxSupply / 2) / 100;
-    uint256 price = factory.calculatePrice(token2, 1e18);
-    uint256 ethRequired = (price * stepSize) / 1e18;
-    
-    // Log values before attempting buy
-    emit log_named_uint("Max Supply", maxSupply);
-    emit log_named_uint("Price Point", pricePoint);
-    emit log_named_uint("Step Size", stepSize);
-    emit log_named_uint("Price", price);
-    emit log_named_uint("Required ETH", ethRequired);
-    
-    factory.buy{value: ethRequired}(token, 0);
-    
-    vm.stopPrank();
-}
-function testTokenTransferRestrictions() public {
-    vm.startPrank(user);
-    vm.deal(user, 1000 ether);
+    // Additional helper test to try specific boundary values
+    function testSpecificBoundary() public {
+        uint256 maxSupply = type(uint128).max - 1; // Try half of uint256 max
+        uint64 pricePoint = type(uint64).max;
 
-    // Buy some tokens first
-    uint256 stepSize = SALE_SUPPLY / 100; // 1% steps
-    uint256 currentSupply = Glottis20(token).totalSupply();
-    uint256 t = (currentSupply * 1e18) / SALE_SUPPLY;
-    uint256 price = factory.calculatePrice(token, t);
-    uint256 ethRequired = (price * stepSize) / 1e18;
+        address token2 = factory.createToken(
+            "Boundary Token",
+            "BOUND",
+            maxSupply,
+            [pricePoint, pricePoint, pricePoint, pricePoint],
+            bytes32(uint256(block.timestamp)),
+            ""
+        );
 
-    factory.buy{value: ethRequired}(token, 0);
+        vm.deal(user, type(uint256).max);
+        vm.startPrank(user);
 
-    // Verify user received tokens
-    uint256 userBalance = Glottis20(token).balanceOf(user);
-    assertGt(userBalance, 0);
+        uint256 stepSize = (maxSupply / 2) / 100;
+        uint256 price = factory.calculatePrice(token2, 1e18);
+        uint256 ethRequired = (price * stepSize) / 1e18;
 
-    // Try to transfer tokens to another address
-    address recipient = address(0x3);
-    uint256 transferAmount = userBalance / 2;
+        // Log values before attempting buy
+        emit log_named_uint("Max Supply", maxSupply);
+        emit log_named_uint("Price Point", pricePoint);
+        emit log_named_uint("Step Size", stepSize);
+        emit log_named_uint("Price", price);
+        emit log_named_uint("Required ETH", ethRequired);
 
-    // Updated to expect the correct custom error
-    vm.expectRevert(abi.encodeWithSignature("TransfersLocked()"));
-    Glottis20(token).transfer(recipient, transferAmount);
+        factory.buy{value: ethRequired}(token, 0);
 
-    // Try transferFrom as well
-    Glottis20(token).approve(address(0x4), transferAmount);
-    
-    vm.stopPrank();
-    
-    vm.startPrank(address(0x4));
-    vm.expectRevert(abi.encodeWithSignature("TransfersLocked()"));
-    Glottis20(token).transferFrom(user, recipient, transferAmount);
-    vm.stopPrank();
+        vm.stopPrank();
+    }
 
-}
+    function testTokenTransferRestrictions() public {
+        vm.startPrank(user);
+        vm.deal(user, 1000 ether);
 
-function testMicroTransferRestrictions() public {
-    vm.startPrank(user);
-    vm.deal(user, 1000 ether);
+        // Buy some tokens first
+        uint256 stepSize = SALE_SUPPLY / 100; // 1% steps
+        uint256 currentSupply = Glottis20(token).totalSupply();
+        uint256 t = (currentSupply * 1e18) / SALE_SUPPLY;
+        uint256 price = factory.calculatePrice(token, t);
+        uint256 ethRequired = (price * stepSize) / 1e18;
 
-    uint256 stepSize = SALE_SUPPLY / 100;
-    uint256 currentSupply = Glottis20(token).totalSupply();
-    uint256 t = (currentSupply * 1e18) / SALE_SUPPLY;
-    uint256 price = factory.calculatePrice(token, t);
-    uint256 ethRequired = (price * stepSize) / 1e18;
+        factory.buy{value: ethRequired}(token, 0);
 
-    factory.buy{value: ethRequired}(token, 0);
+        // Verify user received tokens
+        uint256 userBalance = Glottis20(token).balanceOf(user);
+        assertGt(userBalance, 0);
 
-    address recipient = address(0x3);
-    
-    vm.expectRevert(abi.encodeWithSignature("TransfersLocked()"));
-    Glottis20(token).transfer(recipient, 1);
+        // Try to transfer tokens to another address
+        address recipient = address(0x3);
+        uint256 transferAmount = userBalance / 2;
 
-    vm.stopPrank();
-}
+        // Updated to expect the correct custom error
+        vm.expectRevert(abi.encodeWithSignature("TransfersLocked()"));
+        Glottis20(token).transfer(recipient, transferAmount);
 
+        // Try transferFrom as well
+        Glottis20(token).approve(address(0x4), transferAmount);
 
-function testZeroTransferRestrictions() public {
-    vm.startPrank(user);
-    vm.deal(user, 1000 ether);
+        vm.stopPrank();
 
-    uint256 stepSize = SALE_SUPPLY / 100;
-    uint256 currentSupply = Glottis20(token).totalSupply();
-    uint256 t = (currentSupply * 1e18) / SALE_SUPPLY;
-    uint256 price = factory.calculatePrice(token, t);
-    uint256 ethRequired = (price * stepSize) / 1e18;
+        vm.startPrank(address(0x4));
+        vm.expectRevert(abi.encodeWithSignature("TransfersLocked()"));
+        Glottis20(token).transferFrom(user, recipient, transferAmount);
+        vm.stopPrank();
+    }
 
-    factory.buy{value: ethRequired}(token, 0);
+    function testMicroTransferRestrictions() public {
+        vm.startPrank(user);
+        vm.deal(user, 1000 ether);
 
-    address recipient = address(0x3);
-    
-    vm.expectRevert(abi.encodeWithSignature("TransfersLocked()"));
-    Glottis20(token).transfer(recipient, 0);
+        uint256 stepSize = SALE_SUPPLY / 100;
+        uint256 currentSupply = Glottis20(token).totalSupply();
+        uint256 t = (currentSupply * 1e18) / SALE_SUPPLY;
+        uint256 price = factory.calculatePrice(token, t);
+        uint256 ethRequired = (price * stepSize) / 1e18;
 
-    vm.stopPrank();
-}
+        factory.buy{value: ethRequired}(token, 0);
 
+        address recipient = address(0x3);
 
-function testUniswapTrade(uint256 amount, string memory tradeName) internal {
-    Glottis20(token).approve(UNISWAP_ROUTER, amount);
+        vm.expectRevert(abi.encodeWithSignature("TransfersLocked()"));
+        Glottis20(token).transfer(recipient, 1);
 
-    uint256 balanceBefore = user.balance;
-    uint256 tokenBalanceBefore = Glottis20(token).balanceOf(user);
+        vm.stopPrank();
+    }
 
-    address[] memory path = new address[](2);
-    path[0] = token;
-    path[1] = IUniswapV2Router02(UNISWAP_ROUTER).WETH();
+    function testZeroTransferRestrictions() public {
+        vm.startPrank(user);
+        vm.deal(user, 1000 ether);
 
-    IUniswapV2Router02(UNISWAP_ROUTER).swapExactTokensForETH(
-        amount,
-        0, // min output for testing
-        path,
-        user,
-        block.timestamp + 15 minutes
-    );
+        uint256 stepSize = SALE_SUPPLY / 100;
+        uint256 currentSupply = Glottis20(token).totalSupply();
+        uint256 t = (currentSupply * 1e18) / SALE_SUPPLY;
+        uint256 price = factory.calculatePrice(token, t);
+        uint256 ethRequired = (price * stepSize) / 1e18;
 
-    uint256 balanceAfter = user.balance;
-    uint256 tokenBalanceAfter = Glottis20(token).balanceOf(user);
+        factory.buy{value: ethRequired}(token, 0);
 
-    assertGt(balanceAfter, balanceBefore, string.concat(tradeName, ": ETH balance should increase"));
-    assertEq(tokenBalanceAfter, tokenBalanceBefore - amount, string.concat(tradeName, ": Token balance should decrease exactly"));
-}
+        address recipient = address(0x3);
 
+        vm.expectRevert(abi.encodeWithSignature("TransfersLocked()"));
+        Glottis20(token).transfer(recipient, 0);
+
+        vm.stopPrank();
+    }
+
+    function testUniswapTrade(uint256 amount, string memory tradeName) internal {
+        Glottis20(token).approve(UNISWAP_ROUTER, amount);
+
+        uint256 balanceBefore = user.balance;
+        uint256 tokenBalanceBefore = Glottis20(token).balanceOf(user);
+
+        address[] memory path = new address[](2);
+        path[0] = token;
+        path[1] = IUniswapV2Router02(UNISWAP_ROUTER).WETH();
+
+        IUniswapV2Router02(UNISWAP_ROUTER).swapExactTokensForETH(
+            amount,
+            0, // min output for testing
+            path,
+            user,
+            block.timestamp + 15 minutes
+        );
+
+        uint256 balanceAfter = user.balance;
+        uint256 tokenBalanceAfter = Glottis20(token).balanceOf(user);
+
+        assertGt(balanceAfter, balanceBefore, string.concat(tradeName, ": ETH balance should increase"));
+        assertEq(
+            tokenBalanceAfter,
+            tokenBalanceBefore - amount,
+            string.concat(tradeName, ": Token balance should decrease exactly")
+        );
+    }
 
     receive() external payable {}
 }
-
-

@@ -12,7 +12,7 @@ contract DeployAndTest is Script {
         // Deploy factory
         address uniswapRouterAddress = 0x920b806E40A00E02E7D2b94fFc89860fDaEd3640;
         Glottis20Factory factory = new Glottis20Factory(uniswapRouterAddress, msg.sender);
-        
+
         bytes memory metadata = abi.encode(
             "https://example.com/token-logo.png", // Logo URL
             "A smol token with flat price points", // Description
