@@ -69,6 +69,13 @@ Run specific test with detailed output:
 forge test --match-path test/Glottis20FactoryTest.t.sol -vvvv --fork-url http://localhost:8545
 ```
 
+**Test Results and Code Scanning**
+
+For more information on our tests and code scanning, please refer to the following:
+
+* [Actions](https://github.com/JohnnySheffield/glottis.contracts/actions)
+* [Code Scanning](https://github.com/JohnnySheffield/glottis.contracts/security/code-scanning) 
+
 ## Tesnet Network Information
 
 ### Network IDs
