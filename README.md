@@ -122,11 +122,12 @@ forge test --match-path test/Glottis20FactoryTest.t.sol -vvvv --fork-url http://
 
 ### Fee Structure
 - Uniswap Pool Creation:
-  - Protocol Fee: 0.3%
-  - Creator Fee: 0.1%
-  - Caller Fee: 0.1%
+  - Protocol Fee: 0.20%
+  - Creator Fee: 0.10%
+  - Caller Fee: 0.05%
 - Trading:
-  - Sell Fee: 0.5%
+  - Sell Fee: 0.35%
+  - Buy fee: 0.00%
 
 ## Technical Implementation
 

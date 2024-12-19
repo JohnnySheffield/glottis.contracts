@@ -31,13 +31,13 @@ contract Glottis20Factory is ReentrancyGuard {
     uint256 private constant ONE_FULL = 1e18;
     uint256 private constant HUNDRED = 100;
 
-    //fees when creating a new uniswap pool, in eth
-    uint256 public constant PROTOCOL_FEE = 30e14; // 0.30%
-    uint256 public constant CREATOR_FEE = 10e14; // 0.10%
-    uint256 public constant CALLER_FEE = 10e14; // 0.10%
+    //fees when creating a new uniswap pool, in eth.
+    uint256 public constant PROTOCOL_FEE = 20e14; 
+    uint256 public constant CREATOR_FEE = 10e14;
+    uint256 public constant CALLER_FEE = 5e14; 
 
-    //fee on each sell, in eth
-    uint256 public constant SELL_FEE = 50e14; // 0.50%
+    //fee on each sell, in eth.
+    uint256 public constant SELL_FEE = 35e14;
 
     uint256 public constant BASIS_POINTS = 10000;
 
@@ -127,6 +127,9 @@ contract Glottis20Factory is ReentrancyGuard {
 
         if (maxSupply < ONE_FULL || maxSupply > type(uint128).max || maxSupply % 2 != 0) revert InvalidInput();
 
+        if ((pricePoints[0] < 1 && pricePoints[0] == type(uint128).max)   || (pricePoints[1] < 1 && pricePoints[1] == type(uint128).max) || (pricePoints[2] < 1 && pricePoints[2] == type(uint128).max) || (pricePoints[3] < 1 && pricePoints[0] == type(uint128).max)) {
+            revert InvalidPricePoints();
+        }
         if (pricePoints[0] < 1 || pricePoints[1] < 1 || pricePoints[2] < 1 || pricePoints[3] < 1) {
             revert InvalidPricePoints();
         }
