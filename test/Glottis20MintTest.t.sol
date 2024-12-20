@@ -19,6 +19,10 @@ contract Glottis20MintTest is Test {
     uint64[4] public PRICE_POINTS = [1, 2, 3, 4]; // 1-4 Gwei progression
 
     function setUp() public {
+        // fico23:
+        // this is better because you dont have to do anvil fork etc
+        // just make sure .env file has UNICHAIN_TESTNET_RPC_URL set
+        // vm.createSelectFork(vm.envString("UNICHAIN_TESTNET_RPC_URL"));
         glottisMint = new Glottis20Mint(UNISWAP_ROUTER, PROTOCOL_WALLET);
 
         // Create token

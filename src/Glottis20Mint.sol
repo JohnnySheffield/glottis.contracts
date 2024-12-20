@@ -94,18 +94,26 @@ contract Glottis20Mint is ReentrancyGuard {
         uint256 liquidityEth = ethLiquidity.rawSub(protocolEthFee).rawSub(creatorEthFee).rawSub(callerEthFee);
 
         // Transfer fees
+        // fico23:
+        // why are we forcing? why not just SafeTransferLib.safeTransferETH?
+        // force will call selfdestruct - so im not sure how it works with 3 in a row
+        // even if it does work, its better to use safe transfer
         protocolWallet.forceSafeTransferETH(protocolEthFee);
         readTokenCreator(token).forceSafeTransferETH(creatorEthFee);
         msg.sender.forceSafeTransferETH(callerEthFee);
 
         glottis20.mint(address(this), currentSupply);
 
+        // fico23:
+        // why do we approve 0 then max? shouldn't approve.max be enough?
         bool resApproveZero = glottis20.approve(address(uniswapRouter), 0);
 
         bool resApproveAmnt = glottis20.approve(address(uniswapRouter), type(uint256).max);
 
         require(resApproveZero && resApproveAmnt, "external call(s) failed");
 
+        // fico23:
+        // why are we checking balance of factory? we minted it few lines above
         uint256 factoryBalance = glottis20.balanceOf(address(this));
 
         if (factoryBalance < currentSupply) revert InsufficientBalance();
@@ -113,7 +121,7 @@ contract Glottis20Mint is ReentrancyGuard {
         glottis20.setTradingUnlocked();
 
         uniswapRouter.addLiquidityETH{value: liquidityEth}(
-            token, currentSupply, currentSupply, liquidityEth, address(this), block.timestamp + 15000
+            token, currentSupply, currentSupply, liquidityEth, address(this), block.timestamp + 15000 // fico23: block.timestamp is  enough since we're in the same block
         );
 
         emit UniswapMarketCreated(token);
@@ -132,6 +140,8 @@ contract Glottis20Mint is ReentrancyGuard {
         if (maxSupply < ONE_FULL || maxSupply > type(uint128).max || maxSupply % 2 != 0) revert InvalidInput();
 
         if (
+            // fico23:
+            // how can it be 0 and max at the same time?
             (pricePoints[0] < 1 && pricePoints[0] == type(uint128).max)
                 || (pricePoints[1] < 1 && pricePoints[1] == type(uint128).max)
                 || (pricePoints[2] < 1 && pricePoints[2] == type(uint128).max)
@@ -139,10 +149,15 @@ contract Glottis20Mint is ReentrancyGuard {
         ) {
             revert InvalidPricePoints();
         }
+        // fico23:
+        // i think == 0 is slightly better than < 1
         if (pricePoints[0] < 1 || pricePoints[1] < 1 || pricePoints[2] < 1 || pricePoints[3] < 1) {
             revert InvalidPricePoints();
         }
 
+        // fico23:
+        // why are we checking if the address is deployed?
+        // i think CREATE3.deployDeterministic will revert if it is deployed already
         address predictedAddress = CREATE3.predictDeterministicAddress(salt);
         if (predictedAddress.code.length > 0) revert TokenExists();
 
@@ -150,8 +165,11 @@ contract Glottis20Mint is ReentrancyGuard {
             abi.encodePacked(type(Glottis20).creationCode, abi.encode(name, symbol, 18, maxSupply, address(this))), salt
         );
 
+        // fico23:
+        // i think CREATE3.deployDeterministic will revert if deployment failed
         if (tokenAddress.code.length == 0) revert DeploymentFailed();
 
+        // fico23:
         uint256 packedPrices = uint256(pricePoints[0]) | (uint256(pricePoints[1]) << 64)
             | (uint256(pricePoints[2]) << 128) | (uint256(pricePoints[3]) << 192);
 
