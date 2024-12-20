@@ -34,7 +34,7 @@ jobs:
         id: build
       - name: Run Forge Tests
         run: |
-          forge test -vvvv
+          export UNICHAIN_TESTNET_RPC_URL=https://sepolia.unichain.org/ && forge test -vvvv
         id: test
       - name: Run Slither
         uses: crytic/slither-action@v0.4.0
