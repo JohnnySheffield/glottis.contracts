@@ -56,10 +56,9 @@ forge test --match-path test/Glottis20MintTest.t.sol -vvvv
 
 **Test Results and Code Scanning**
 
-For more information on our tests and code scanning, please refer to the following:
+For more information on our tests, please refer to the following:
 
 * [Actions](https://github.com/JohnnySheffield/glottis.contracts/actions)
-* [Code Scanning](https://github.com/JohnnySheffield/glottis.contracts/security/code-scanning) 
 
 ## Tesnet Network Information
 
