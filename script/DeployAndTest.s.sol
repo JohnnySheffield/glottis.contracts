@@ -23,9 +23,9 @@ contract DeployAndTest is Script {
 
         // Create token
         bytes32 salt = bytes32(uint256(12873));
-        uint64[4] memory pricePoints = [uint64(1), uint64(1), uint64(1), uint64(1)];
+        uint64[4] memory pricePoints = [uint64(1), uint64(1), uint64(1), type(uint64).max - 1];
 
-        Mint.createToken("Small Token", "SMOL", 1e18, pricePoints, salt, metadata);
+        Mint.createToken("Almost Small Token", "SMOL", 1e18, pricePoints, salt, metadata);
 
         vm.stopBroadcast();
     }

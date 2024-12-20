@@ -32,35 +32,9 @@ jobs:
         run: |
           forge build --sizes
         id: build
-      - name: Run Forge tests and Deployment
-        run: >
-          export
-          PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-          &&
-
-          anvil --fork-url https://sepolia.unichain.org/ \
-                --fork-block-number 6373360 \
-                --fork-chain-id 1301 \
-                --chain-id 1301 &
-          sleep 1
-
-
-          for i in $(seq 1 15); do
-               if curl -I http://localhost:8545 > /dev/null 2>&1; then
-                   echo "Anvil is ready"
-                   break
-               else
-                   echo "Waiting for anvil to start, Attempt: $i"
-                   sleep 1
-                   if [[ $i -eq 15 ]]; then
-                       echo "Anvil Failed to Start"
-                       exit 1
-                   fi
-               fi
-          done
-
-           forge script script/DeployAndTest.s.sol --fork-url http://localhost:8545 --broadcast &
-           forge test --match-path test/Glottis20MintTest.t.sol -vvvv --fork-url http://localhost:8545
+      - name: Run Forge Tests
+        run: |
+          forge test -vvvv
         id: test
       - name: Run Slither
         uses: crytic/slither-action@v0.4.0

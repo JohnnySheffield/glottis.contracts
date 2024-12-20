@@ -57,7 +57,6 @@ contract Glottis20Mint is ReentrancyGuard {
     error InvalidPricePoints();
     error TokenNotFound();
     error InvalidInput();
-    error TokenExists();
     error InsufficientPayment();
     error InsufficientLiquidity();
     error InsufficientBalance();
@@ -76,7 +75,7 @@ contract Glottis20Mint is ReentrancyGuard {
         if (pointsMap[token] == 0) revert TokenNotFound();
         Glottis20 glottis20 = Glottis20(token);
 
-        uint256 saleSupply = glottis20.maxSupply() / 2;
+        uint256 saleSupply = glottis20.maxSupply().rawDiv(2);
         uint256 currentSupply = glottis20.totalSupply();
 
         if (saleSupply != currentSupply) revert CurveNotCompleted();
@@ -106,14 +105,10 @@ contract Glottis20Mint is ReentrancyGuard {
 
         require(resApproveZero && resApproveAmnt, "external call(s) failed");
 
-        uint256 factoryBalance = glottis20.balanceOf(address(this));
-
-        if (factoryBalance < currentSupply) revert InsufficientBalance();
-
         glottis20.setTradingUnlocked();
 
         uniswapRouter.addLiquidityETH{value: liquidityEth}(
-            token, currentSupply, currentSupply, liquidityEth, address(this), block.timestamp + 15000
+            token, currentSupply, currentSupply, liquidityEth, address(this), block.timestamp
         );
 
         emit UniswapMarketCreated(token);
@@ -131,20 +126,9 @@ contract Glottis20Mint is ReentrancyGuard {
 
         if (maxSupply < ONE_FULL || maxSupply > type(uint128).max || maxSupply % 2 != 0) revert InvalidInput();
 
-        if (
-            (pricePoints[0] < 1 && pricePoints[0] == type(uint128).max)
-                || (pricePoints[1] < 1 && pricePoints[1] == type(uint128).max)
-                || (pricePoints[2] < 1 && pricePoints[2] == type(uint128).max)
-                || (pricePoints[3] < 1 && pricePoints[0] == type(uint128).max)
-        ) {
+        if (pricePoints[0] == 0 || pricePoints[1] == 0 || pricePoints[2] == 0 || pricePoints[3] == 0) {
             revert InvalidPricePoints();
         }
-        if (pricePoints[0] < 1 || pricePoints[1] < 1 || pricePoints[2] < 1 || pricePoints[3] < 1) {
-            revert InvalidPricePoints();
-        }
-
-        address predictedAddress = CREATE3.predictDeterministicAddress(salt);
-        if (predictedAddress.code.length > 0) revert TokenExists();
 
         address tokenAddress = CREATE3.deployDeterministic(
             abi.encodePacked(type(Glottis20).creationCode, abi.encode(name, symbol, 18, maxSupply, address(this))), salt
@@ -239,13 +223,13 @@ contract Glottis20Mint is ReentrancyGuard {
         returns (uint256 tokensToMint, uint256 ethToUse)
     {
         Glottis20 glottis20 = Glottis20(token);
+        uint256 saleSupply = glottis20.maxSupply().rawDiv(2);
         uint256 currentSupply = glottis20.totalSupply();
-        uint256 STEP_SIZE = glottis20.maxSupply().rawDiv(2).rawDiv(HUNDRED);
-        if (glottis20.maxSupply().rawDiv(2) == glottis20.totalSupply()) revert MaxSupplyReached();
+        uint256 STEP_SIZE = saleSupply.rawDiv(HUNDRED);
+        if (saleSupply == glottis20.totalSupply()) revert MaxSupplyReached();
 
         uint256 stepStartSupply = (currentSupply.rawDiv(STEP_SIZE)).rawMul(STEP_SIZE);
-        uint256 pricePerFullToken =
-            calculatePrice(token, (stepStartSupply.rawMul(ONE_FULL)).rawDiv(glottis20.maxSupply().rawDiv(2)));
+        uint256 pricePerFullToken = calculatePrice(token, (stepStartSupply.rawMul(ONE_FULL)).rawDiv(saleSupply));
 
         tokensToMint = ethIn.rawMul(ONE_FULL).rawDiv(pricePerFullToken);
         uint256 maxInStep = (stepStartSupply.rawDiv(STEP_SIZE).rawAdd(1).rawMul(STEP_SIZE)).rawSub(currentSupply);
@@ -281,14 +265,15 @@ contract Glottis20Mint is ReentrancyGuard {
         returns (uint256 tokensToBurn, uint256 ethToReturn, uint256 finalEthAmount)
     {
         Glottis20 glottis20 = Glottis20(token);
-        uint256 STEP_SIZE = glottis20.maxSupply().rawDiv(2).rawDiv(HUNDRED);
+
+        uint256 saleSupply = glottis20.maxSupply().rawDiv(2);
+        uint256 STEP_SIZE = saleSupply.rawDiv(HUNDRED);
         uint256 currentSupply = glottis20.totalSupply();
 
-        if (glottis20.maxSupply().rawDiv(2) == glottis20.totalSupply()) revert MaxSupplyReached();
+        if (saleSupply == glottis20.totalSupply()) revert MaxSupplyReached();
 
         uint256 stepStartSupply = ((currentSupply - 1).rawDiv(STEP_SIZE)).rawMul(STEP_SIZE);
-        uint256 pricePerFullToken =
-            calculatePrice(token, (stepStartSupply.rawMul(ONE_FULL)).rawDiv(glottis20.maxSupply().rawDiv(2)));
+        uint256 pricePerFullToken = calculatePrice(token, (stepStartSupply.rawMul(ONE_FULL)).rawDiv(saleSupply));
 
         uint256 availableInStep = currentSupply.rawSub(stepStartSupply);
         tokensToBurn = tokenAmount > availableInStep ? availableInStep : tokenAmount;

@@ -41,32 +41,18 @@ Glottis Protocol combines the best of bonding curves with automated market makin
 
 ## Local Environment Setup
 
-### Why Fork?
-We fork the Unichain Sepolia testnet because we need access to an existing Uniswap V2 deployment. The fork creates a local copy of the blockchain that we can interact with for our testing purposes.
 
-### Setting up Local Node
-1. Start a local Anvil node (Foundry's local testnet) with the following command:
-```bash
-anvil --fork-url https://sepolia.unichain.org/ \
-    --fork-block-number 6373360 \
-    --fork-chain-id 1301 \
-    --chain-id 1301
-```
-
-2. In a new terminal, set the development private key
+1. In a new terminal, set the development private key and rpc endpoint
 ```bash
 export PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+export UNICHAIN_TESTNET_RPC_URL=https://sepolia.unichain.org/
 ```
 
-### Deployment and Testing
-Deploy contracts to local fork:
-```bash
-forge script script/DeployAndTest.s.sol --fork-url http://localhost:8545 --broadcast
-```
+### Testing
 
 Run specific test with detailed output:
 ```bash
-forge test --match-path test/Glottis20FactoryTest.t.sol -vvvv --fork-url http://localhost:8545
+forge test --match-path test/Glottis20MintTest.t.sol -vvvv
 ```
 
 **Test Results and Code Scanning**
@@ -99,13 +85,12 @@ For more information on our tests and code scanning, please refer to the followi
 | InvalidPricePoints    | 0xbf8c0e9d |
 | TokenNotFound         | 0xcbdb7b30 |
 | InvalidInput          | 0xb4fa3fb3 |
-| TokenExists           | 0x55c7e8ba |
 | InsufficientPayment   | 0xcd1c8867 |
 | InsufficientLiquidity | 0xbb55fd27 |
 | InsufficientBalance   | 0xf4d678b8 |
 | CurveNotCompleted     | 0x7ec3f157 |
 | SlippageExceeded      | 0x8199f5f3 |
-| DeploymentFailed      | 0x30116425 |
+
 
 
 ## Additional Info

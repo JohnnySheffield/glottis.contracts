@@ -19,6 +19,7 @@ contract Glottis20MintTest is Test {
     uint64[4] public PRICE_POINTS = [1, 2, 3, 4]; // 1-4 Gwei progression
 
     function setUp() public {
+        vm.createSelectFork(vm.envString("UNICHAIN_TESTNET_RPC_URL"));
         glottisMint = new Glottis20Mint(UNISWAP_ROUTER, PROTOCOL_WALLET);
 
         // Create token
@@ -256,6 +257,12 @@ contract Glottis20MintTest is Test {
         vm.expectRevert(abi.encodeWithSignature("TransfersLocked()"));
         Glottis20(token).transferFrom(user, recipient, transferAmount);
         vm.stopPrank();
+    }
+
+    function testSameSaltCreate3() public {
+        bytes32 salt = bytes32(uint256(1));
+        vm.expectRevert(abi.encodeWithSignature("DeploymentFailed()"));
+        glottisMint.createToken("Test Token", "TEST", SALE_SUPPLY * 2, PRICE_POINTS, salt, "");
     }
 
     function testMicroTransferRestrictions() public {
